@@ -1,19 +1,21 @@
 #! /usr/bin/env python3
 # proxyget.py
-
+import json
 import string
 import functools
 import requests
 import urllib.request  # don't import . from . -- request + requests = confusing
 from pathlib import Path
+from warnings import warn
 from getpass import getuser, getpass
 from typing import Any, Optional, Dict, NamedTuple, Union, Mapping
 
-__all__ = ['make_proxy', 'make_kwargs', 'get', 'getexe',
-           'clear_password_cache', 'ProxyInfo']
+__all__ = ['make_proxy', 'make_kwargs', 'get', 'get_file',
+           'clear_password_cache', 'ProxyInfo',
+           'default_proxy', 'default_proxy_path']
 
 PathType = Union[Path, str]
-
+default_proxy_path: Path = Path(__file__).parent / 'default_proxy.json'
 _test_url = "http://example.com"
 
 
@@ -34,7 +36,7 @@ class ProxyInfo(NamedTuple):
 
     server: str
     port: int
-    domain: str
+    domain: str = ""
     usr: Optional[str] = None
 
     def assert_correct(self) -> None:
@@ -68,13 +70,29 @@ class ProxyInfo(NamedTuple):
             raise ValueError(
                     f"port ({self.port!r}) must be between 0 and 65535 inclusive")
 
-    def copy_with(self, server: str = None, port: int = None,
+    def copy_with(self, *, server: str = None, port: int = None,
                   domain: str = None, usr: str = None) -> 'ProxyInfo':
+        """A copy of this PoxyInfo with any arguments overriding the equivelent
+        values in this
+        """
         server = self.server if server is None else server
         port = self.port if port is None else port
         domain = self.domain if domain is None else domain
         usr = self.usr if usr is None else usr
         return ProxyInfo(server, port, domain, usr)
+
+    @classmethod
+    def from_json(cls, file: PathType) -> 'ProxyInfo':
+        """Load a ProxyInfo from a json file holding a single object of the form
+        {
+            "server": <a string>,
+            "port": <an int>,
+            "domain": <an optional string>,
+            "usr": <an optional string>
+        }
+        """
+        with open(file) as f:
+            return ProxyInfo(**json.load(f))
 
 
 def make_url_safe(s: str) -> str:
@@ -221,9 +239,17 @@ def get(url: str, *args: Any, proxy_info: ProxyInfo, nosave: bool = False,
                                       nosave=nosave, **kwargs))
 
 
-def getexe(url: str, filename: PathType, proxy_info: ProxyInfo,
-           nosave: bool = False, **kwargs: Any) -> None:
+def get_file(url: str, filename: PathType, proxy_info: ProxyInfo,
+             nosave: bool = False, **kwargs: Any) -> None:
+    """ Copy a
 
+    :param url:
+    :param filename:
+    :param proxy_info:
+    :param nosave:
+    :param kwargs:
+    :return:
+    """
     proxies = make_proxy(proxy_info) \
         if nosave else make_proxy_and_save(proxy_info)
 
@@ -231,3 +257,17 @@ def getexe(url: str, filename: PathType, proxy_info: ProxyInfo,
     opener = urllib.request.build_opener(handler)
     urllib.request.install_opener(opener)
     urllib.request.urlretrieve(url, str(filename), **kwargs)
+
+
+# Attempt to import the default_proxy
+# If it fails, default_proxy will not be an attribute of this file and
+# a warning will be raised
+try:
+    default_proxy = ProxyInfo.from_json(default_proxy_path)
+except FileNotFoundError:
+    warn(f"No defaults file found @ {default_proxy_path}")
+except json.JSONDecodeError as e:
+    warn(f"Unable to decode json @ {default_proxy_path}: {e}")
+except (TypeError, ValueError) as e:
+    warn(f"Incorrect proxy json @ {default_proxy_path}: {e}")
+# unexpected exceptions are raised

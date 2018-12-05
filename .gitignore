@@ -1,4 +1,4 @@
 .git/
 .idea/
 __pycache__/
-defaults.py
+default_proxy.json
