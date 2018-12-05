@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 # proxyget.py
+""" Simple library for retrieving websites and online files through a proxy """
 import json
 import string
 import functools
@@ -12,12 +13,14 @@ from typing import Any, Optional, Dict, NamedTuple, Union, Mapping
 
 __all__ = ['make_proxy', 'make_kwargs', 'get', 'get_file',
            'clear_password_cache', 'ProxyInfo',
-           'default_proxy', 'default_proxy_path']
+           'default_proxy', 'default_proxy_path', 'get_default_proxy']
 
 PathType = Union[Path, str]
 default_proxy_path: Path = Path(__file__).parent / 'default_proxy.json'
 _test_url = "http://example.com"
 
+
+# ProxyInfo class
 
 class ProxyInfo(NamedTuple):
     """ Simple namedtuple used to hold proxy info to create the proxies.
@@ -94,6 +97,8 @@ class ProxyInfo(NamedTuple):
         with open(file) as f:
             return ProxyInfo(**json.load(f))
 
+
+# helpers
 
 def make_url_safe(s: str) -> str:
     """
@@ -205,26 +210,29 @@ def make_kwargs(proxy_info: ProxyInfo, *, nosave: bool = False,
     return kwargs
 
 
+# main events
 
-def get(url: str, *args: Any, proxy_info: ProxyInfo, nosave: bool = False,
-        **kwargs: Any) -> requests.Response:
+def get(url: str, *args: Any, proxy_info: ProxyInfo = None,
+        nosave: bool = False, **kwargs: Any) -> requests.Response:
     """ Make a request to `url` via a proxy
 
     :param url: str
         The url to request
+
     :param args: Any
         Additional positonal args to pass to `requests.get`
 
-    :param proxy_info: ProxyInfo
+    :param proxy_info: ProxyInfo?
         a namedtuple of the form
             (server: str, port: int, domain: str, usr: str?)
+        If None, use the default_proxy (if exists)
 
     :param nosave: bool
         If True, save any passwords entered for a given `proxy_info`. In order
         to clear the password cache, call `clear_password_cache()`
+
     :param kwargs: Any
-        Additional arguments to pass to `requests.get` or
-        `urllib.request.urlretrieve`
+        Additional arguments to pass to `requests.get`
 
     :return: requests.Request
         The request object recieved from the URL via the proxy
@@ -233,23 +241,42 @@ def get(url: str, *args: Any, proxy_info: ProxyInfo, nosave: bool = False,
         Or any subclass thereof
             e.g. if the url does not exist or the proxy was incorrect
     """
-
+    if proxy_info is None:
+        proxy_info = default_proxy
     return requests.get(url, *args,
                         **make_kwargs(proxy_info=proxy_info,
                                       nosave=nosave, **kwargs))
 
 
-def get_file(url: str, filename: PathType, proxy_info: ProxyInfo,
+def get_file(url: str, filename: PathType, proxy_info: ProxyInfo = None,
              nosave: bool = False, **kwargs: Any) -> None:
-    """ Copy a
+    """ Copy a file from url to filename.
 
-    :param url:
-    :param filename:
-    :param proxy_info:
-    :param nosave:
-    :param kwargs:
-    :return:
+    param url: str
+        The url to request
+
+    :param filename: Path | str
+        The file to pass to
+
+    :param proxy_info: ProxyInfo?
+        a namedtuple of the form
+            (server: str, port: int, domain: str, usr: str?)
+        If None, use the default_proxy (if exists)
+
+    :param nosave: bool
+        If True, save any passwords entered for a given `proxy_info`. In order
+        to clear the password cache, call `clear_password_cache()`
+
+    :param kwargs: Any
+        Additional arguments to pass to `urllib.request.urlretrieve`
+
+
+    :return: None
     """
+
+    if proxy_info is None:
+        proxy_info = get_default_proxy()
+
     proxies = make_proxy(proxy_info) \
         if nosave else make_proxy_and_save(proxy_info)
 
@@ -258,6 +285,21 @@ def get_file(url: str, filename: PathType, proxy_info: ProxyInfo,
     urllib.request.install_opener(opener)
     urllib.request.urlretrieve(url, str(filename), **kwargs)
 
+# defaults
+
+def get_default_proxy() -> ProxyInfo:
+    """ Get the default proxy with a more useful error on not being defined
+
+    :return: ProxyInfo
+        The default proxy
+    :Raises: RuntimeError
+        If there is no default proxy
+    """
+    try:
+        return default_proxy
+    except (NameError, AttributeError):
+        raise RuntimeError("No default proxy found -- "
+                           "please supply one") from None
 
 # Attempt to import the default_proxy
 # If it fails, default_proxy will not be an attribute of this file and
