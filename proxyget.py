@@ -313,3 +313,8 @@ except json.JSONDecodeError as e:
 except (TypeError, ValueError) as e:
     warn(f"Incorrect proxy json @ {default_proxy_path}: {e}")
 # unexpected exceptions are raised
+
+
+if __name__ == '__main__':
+    print('ERROR: this file should be run as a script -- to run proxyget use\n'
+          '$ python -m proxyget ...')
