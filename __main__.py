@@ -79,15 +79,18 @@ def main():
     except ValueError:  # bad port
         raise
 
-    if args.exe:
+    if args.file or args.exe:
 
         if out is None:
             raise ValueError("If '--exe' specified, '--out' must be set")
+
+        print(f'getting file from {args.url}. Please wait...')
         proxyget.get_file(args.url, out, proxy_info=proxy_info)
         print('done')
 
     else:
 
+        print(f'Getting site {args.url}...')
         data = proxyget.get(args.url, proxy_info=proxy_info)
 
         if data.status_code != 200:

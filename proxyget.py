@@ -115,7 +115,7 @@ def make_url_safe(s: str) -> str:
 
 def clear_password_cache() -> None:
     """ Clear the passwords cache """
-    make_proxy_and_save.clear_cache()
+    make_proxy_and_save.cache_clear()
 
 
 @functools.lru_cache(maxsize=None)
