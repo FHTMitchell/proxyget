@@ -5,11 +5,12 @@ proxyget -- __main__.py
 author  - fmitchell
 created - 2018-Aug-03
 """
-
+import sys
 import argparse
 from pathlib import Path
 from urllib import error
 
+sys.path.insert(0, Path(__file__).parent)
 import proxyget
 
 try:
@@ -56,12 +57,11 @@ def main():
         help="The username for the proxy "
              "(will assume OS username if not passed)")
 
-    parser.add_argument('-f', '--file', action="store_true",
-        help="To retrieve a file, rather than a site (must provide argument "
-             "to -o/--out if used)")
+    parser.add_argument('-q', '--quiet', action='store_true',
+        help="Select to quiet output")
 
-    parser.add_argument('-e', '--exe', action="store_true",
-        help="deprecated: same as -f/--file")
+    parser.add_argument('-b', '--binary', action="store_true",
+        help="Set if downloading a binary file")
 
 
     args = parser.parse_args()
@@ -79,34 +79,30 @@ def main():
     except ValueError:  # bad port
         raise
 
-    if args.file or args.exe:
+    if args.out:
 
         if out is None:
             raise ValueError("If '--exe' specified, '--out' must be set")
 
-        print(f'getting file from {args.url}. Please wait...')
-        proxyget.get_file(args.url, out, proxy_info=proxy_info)
-        print('done')
+        if not args.quiet:
+            print(f'getting file from {args.url}. Please wait...')
+        proxyget.get_file(args.url, out, args.binary, proxy_info=proxy_info,
+                           quiet=args.quiet)
 
     else:
 
-        print(f'Getting site {args.url}...')
+        if not args.quiet:
+            print(f'Getting site {args.url}...')
         data = proxyget.get(args.url, proxy_info=proxy_info)
 
         if data.status_code != 200:
             raise error.HTTPError(args.url, data.status_code, data.text,
                                   data.headers, None)
 
-        if out is None:
-            print(data.text)
-        else:
-            if not out.parent.exists():
-                raise FileNotFoundError(
-                        f'{out.parent} directory does not exist')
+        print(data.text)
 
-            with out.open('w') as f:
-                f.write(data.text)
-            print('done')
+    if not args.quiet:
+        print('done')
 
 
 if __name__ == '__main__':

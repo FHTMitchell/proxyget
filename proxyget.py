@@ -11,6 +11,8 @@ from warnings import warn
 from getpass import getuser, getpass
 from typing import Any, Optional, Dict, NamedTuple, Union, Mapping
 
+from . import utils
+
 __all__ = ['make_proxy', 'make_kwargs', 'get', 'get_file',
            'clear_password_cache', 'ProxyInfo',
            'default_proxy', 'default_proxy_path', 'get_default_proxy']
@@ -212,9 +214,10 @@ def make_kwargs(proxy_info: ProxyInfo, *, nosave: bool = False,
 
 # main events
 
-def get(url: str, *args: Any, proxy_info: ProxyInfo = None,
+def get(url: str, *args: Any, proxy_info: ProxyInfo = None, stream: bool = False,
         nosave: bool = False, **kwargs: Any) -> requests.Response:
     """ Make a request to `url` via a proxy
+
 
     :param url: str
         The url to request
@@ -226,6 +229,10 @@ def get(url: str, *args: Any, proxy_info: ProxyInfo = None,
         a namedtuple of the form
             (server: str, port: int, domain: str, usr: str?)
         If None, use the default_proxy (if exists)
+
+    :param stream: bool
+         See requests.request. If True, use with:
+            with proxyget.get(..., stream=True) as response: ...
 
     :param nosave: bool
         If True, save any passwords entered for a given `proxy_info`. In order
@@ -243,47 +250,50 @@ def get(url: str, *args: Any, proxy_info: ProxyInfo = None,
     """
     if proxy_info is None:
         proxy_info = default_proxy
-    return requests.get(url, *args,
-                        **make_kwargs(proxy_info=proxy_info,
-                                      nosave=nosave, **kwargs))
+    try:
+        return requests.get(url, *args, stream=stream,
+                            **make_kwargs(proxy_info=proxy_info,
+                                          nosave=nosave, **kwargs))
+    except requests.exceptions.ProxyError:
+        msg = "Error with proxy: probable username-password incorrect combination"
+        raise requests.exceptions.ProxyError(msg)
 
 
-def get_file(url: str, filename: PathType, proxy_info: ProxyInfo = None,
-             nosave: bool = False, **kwargs: Any) -> None:
-    """ Copy a file from url to filename.
 
-    param url: str
-        The url to request
+def get_file(url: str, filename: PathType, binary: bool,
+             proxy_info: ProxyInfo = None, nosave: bool = False,
+             quiet: bool = False, **kwargs: Any) -> None:
 
-    :param filename: Path | str
-        The file to pass to
+    log = print if not quiet else lambda *a, **k: None
 
-    :param proxy_info: ProxyInfo?
-        a namedtuple of the form
-            (server: str, port: int, domain: str, usr: str?)
-        If None, use the default_proxy (if exists)
+    with get(url, proxy_info=proxy_info, stream=True, nosave=nosave, **kwargs) \
+            as res:
 
-    :param nosave: bool
-        If True, save any passwords entered for a given `proxy_info`. In order
-        to clear the password cache, call `clear_password_cache()`
+        size: Optional[float] = utils.dict_get_ignore_case(
+                res.headers, 'content-length', None)
+        if size is not None:
+            size = float(size)
 
-    :param kwargs: Any
-        Additional arguments to pass to `urllib.request.urlretrieve`
+        pbar = utils.ProgressBar()
 
+        if size is not None and not quiet:
+            log(f'Writing {utils.write_bytes(size)} to "{filename!s}"')
+            pbar.print_init()
+        elif not quiet:
+            log("Unable to get content-length from header (case insensitive)")
 
-    :return: None
-    """
-
-    if proxy_info is None:
-        proxy_info = get_default_proxy()
-
-    proxies = make_proxy(proxy_info) \
-        if nosave else make_proxy_and_save(proxy_info)
-
-    handler = urllib.request.ProxyHandler(proxies)
-    opener = urllib.request.build_opener(handler)
-    urllib.request.install_opener(opener)
-    urllib.request.urlretrieve(url, str(filename), **kwargs)
+        with open(filename, 'wb' if binary else 'w') as f:
+            total = 0
+            chunk_size = 1024
+            for chunk in res.iter_content(chunk_size):
+                try:
+                    f.write(chunk)
+                except TypeError:
+                    raise TypeError("trying to write unicode text as bytes - "
+                                    "try running in binary (-b) mode")
+                total += chunk_size
+                if size is not None and not quiet:
+                    pbar.print_progress(total, size)
 
 # defaults
 
