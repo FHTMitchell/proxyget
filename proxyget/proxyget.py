@@ -5,7 +5,6 @@ import json
 import string
 import functools
 import requests
-import urllib.request  # don't import . from . -- request + requests = confusing
 from pathlib import Path
 from warnings import warn
 from getpass import getuser, getpass
@@ -277,7 +276,7 @@ def get_file(url: str, filename: PathType, binary: bool,
         pbar = utils.ProgressBar()
 
         if size is not None and not quiet:
-            log(f'Writing {utils.write_bytes(size)} to "{filename!s}"')
+            log(f'Writing { utils.write_bytes(size)} to "{filename!s}"')
             pbar.print_init()
         elif not quiet:
             log("Unable to get content-length from header (case insensitive)")

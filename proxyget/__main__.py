@@ -10,11 +10,9 @@ import argparse
 from pathlib import Path
 from urllib import error
 
-sys.path.insert(0, Path(__file__).parent)
-import proxyget
-
+from proxyget import proxyget
 try:
-    from proxyget import default_proxy
+    from proxyget.proxyget import default_proxy
 except ImportError:
     default_proxy = (None, None, "", None)
 default_server, default_port, default_domain, default_user = default_proxy
@@ -23,14 +21,19 @@ default_server, default_port, default_domain, default_user = default_proxy
 desc = """
 Run to retrieve a webpage or file from the given url through a proxy.
 
-If retrieving a file, pass -f/--file and supply an argument to -o/--out.
+If retrieving a file (or to save website html), supply an argument to -o/--out.
 If default_proxy.json exists and is correct; --server and --port are optional
 (and will use the default if not entered). Otherwise, they are required.
 --domain and --user are always optional but will also use any defaults provided
 in the json.
 
 Example usage to retrieve a file: 
-    ```$ python -m proxyget --file http:/url/to/file.exe --out ./file.exe```
+
+    $ python -m proxyget http://url/to/file.txt --out ./file.txt
+    
+Example usage to retrieve an executable file:
+
+    $ python -m proxyget http://url/to/executable.exe -b --out ./exec.exe
 """
 
 def main():
@@ -75,7 +78,7 @@ def main():
         proxy_info.assert_correct()
     except TypeError:  # default not defined
         raise ValueError("--server and --port must be provided "
-                         "if no default proxy info specified")
+                         "if no default proxy info specified") from None
     except ValueError:  # bad port
         raise
 
@@ -87,7 +90,7 @@ def main():
         if not args.quiet:
             print(f'getting file from {args.url}. Please wait...')
         proxyget.get_file(args.url, out, args.binary, proxy_info=proxy_info,
-                           quiet=args.quiet)
+                          quiet=args.quiet)
 
     else:
 

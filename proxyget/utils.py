@@ -72,7 +72,7 @@ def write_bytes(num, fmt: str = '.2f', bits: bool = False) -> str:
 @dc.dataclass
 class ProgressBar:
 
-    update_rate: float = 0
+    update_rate: float = 0.5
     prefix: str = 'Progress'
     suffix: str = 'complete'
     precision: int = 1

@@ -1,7 +1,7 @@
 proxyget - for getting through proxies you have access to but no admin
 control
 
-python must be version 3.6 or greater
+Python must be version 3.6 or greater
 
 To run in python
 
@@ -10,7 +10,6 @@ To run in python
     >>> proxyget.get(...)
 
 or in terminal:
-(proxyget directory must be in PYTHONPATH or current working directory)
 
     $ python -m proxyget ...
     
@@ -20,8 +19,8 @@ To download file either in python
     
 or in terminal
     
-    $ python -m proxyget --file <url> --out <outfile.exe>
+    $ python -m proxyget <url> --out <outfile.exe>
     
-For futher help
+For further help
 
     $ python -m proxyget --help
