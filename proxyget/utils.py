@@ -5,11 +5,12 @@ proxyget -- utils.py
 author  - fmitchell
 created - 2018-Dec-10
 """
+
+import dataclasses as dc
 import io
 import itertools
-import dataclasses as dc
 import sys
-from typing import Mapping, TypeVar, Optional, Iterable, Iterator
+from typing import Iterable, Iterator, Mapping, Optional, TypeVar
 
 from . import timers
 

@@ -5,12 +5,13 @@ proxyget -- __main__.py
 author  - fmitchell
 created - 2018-Aug-03
 """
-import sys
+
 import argparse
 from pathlib import Path
 from urllib import error
 
 from proxyget import proxyget
+
 try:
     from proxyget.proxyget import default_proxy
 except ImportError:

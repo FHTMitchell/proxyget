@@ -1,14 +1,16 @@
 #! /usr/bin/env python3
 # proxyget.py
 """ Simple library for retrieving websites and online files through a proxy """
+
+import functools
 import json
 import string
-import functools
-import requests
+from getpass import getpass, getuser
 from pathlib import Path
+from typing import Any, Dict, Mapping, NamedTuple, Optional, Union
 from warnings import warn
-from getpass import getuser, getpass
-from typing import Any, Optional, Dict, NamedTuple, Union, Mapping
+
+import requests
 
 from . import utils
 
@@ -266,17 +268,20 @@ def get_file(url: str, filename: PathType, binary: bool,
     log = print if not quiet else lambda *a, **k: None
 
     with get(url, proxy_info=proxy_info, stream=True, nosave=nosave, **kwargs) \
-            as res:
+            as response:
 
         size: Optional[float] = utils.dict_get_ignore_case(
-                res.headers, 'content-length', None)
+                response.headers,
+                key='content-length',
+                default=None
+        )
         if size is not None:
             size = float(size)
 
         pbar = utils.ProgressBar()
 
         if size is not None and not quiet:
-            log(f'Writing { utils.write_bytes(size)} to "{filename!s}"')
+            log(f'Writing {utils.write_bytes(size)} to "{filename!s}"')
             pbar.print_init()
         elif not quiet:
             log("Unable to get content-length from header (case insensitive)")
@@ -284,11 +289,11 @@ def get_file(url: str, filename: PathType, binary: bool,
         with open(filename, 'wb' if binary else 'w') as f:
             total = 0
             chunk_size = 1024
-            for chunk in res.iter_content(chunk_size):
+            for chunk in response.iter_content(chunk_size):
                 try:
                     f.write(chunk)
                 except TypeError:
-                    raise TypeError("trying to write unicode text as bytes - "
+                    raise TypeError("trying to write bytes as unicode text - "
                                     "try running in binary (-b) mode")
                 total += chunk_size
                 if size is not None and not quiet:

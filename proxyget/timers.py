@@ -1,12 +1,10 @@
 # it/timers.py
 
-import time
 import dataclasses as _dc
+import time
 import typing as _t
-
-from collections import OrderedDict as _OrderedDict, Counter as _Counter
+from collections import OrderedDict as _OrderedDict
 from warnings import warn as _warn
-
 
 
 def timestamp(unix_time: float = None, show_zone: bool = True) -> str:

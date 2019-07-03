@@ -1,5 +1,6 @@
 import sys
 from warnings import warn
+
 if sys.version_info < (3, 5):
     warn("proxyget is designed for python 3.6 or later but you are running {}"
          .format('.'.join(map(str, sys.version_info[:3]))))
