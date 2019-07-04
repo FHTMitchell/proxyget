@@ -332,5 +332,5 @@ except (TypeError, ValueError) as e:
 
 
 if __name__ == '__main__':
-    print('ERROR: this file should be run as a script -- to run proxyget use\n'
+    print('ERROR: this file should not be run as a script -- to run proxyget use\n'
           '$ python -m proxyget ...')
