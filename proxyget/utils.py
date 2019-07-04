@@ -84,6 +84,7 @@ class ProgressBar:
 
     _timer: timers.Timer = dc.field(init=False, repr=False)
     _cycle: Iterator[str] = dc.field(init=False, repr=False)
+    _complete: bool = dc.field(init=False, repr=False)
 
     def __post_init__(self):
 
@@ -99,8 +100,15 @@ class ProgressBar:
         assert len(s) == 1, repr(s)
 
     def print_init(self) -> None:
+        self._complete = False  # in case we run again
         self.print_progress(0)
         self._timer.restart()
+
+    def print_end(self) -> None:
+        if not self._complete:
+            self.file.write('\n')
+            self.file.flush()
+            self._complete = True
 
     def print_progress(self, fraction: float, total: float = 1) -> None:
 
@@ -122,5 +130,4 @@ class ProgressBar:
         self.file.flush()
 
         if fraction == 1:
-            self.file.write('\n')
-            self.file.flush()
+           self.print_end()

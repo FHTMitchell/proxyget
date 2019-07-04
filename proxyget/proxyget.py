@@ -298,6 +298,8 @@ def get_file(url: str, filename: PathType, binary: bool,
                 total += chunk_size
                 if size is not None and not quiet:
                     pbar.print_progress(total, size)
+            if size is not None and not quiet:
+                pbar.print_end()
 
 # defaults
 
