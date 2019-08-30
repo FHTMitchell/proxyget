@@ -57,24 +57,24 @@ class ProxyInfo(NamedTuple):
         """
 
         if not isinstance(self.server, str):
-            raise TypeError(f'server must be a str, not'
-                            f' {self.server.__class__.__name__}')
+            raise TypeError(f"server must be a str, not"
+                            f" {self.server.__class__.__name__}")
 
         if not isinstance(self.domain, str):
-            raise TypeError(f'domain must be a str, not'
-                            f' {self.domain.__class__.__name__}')
+            raise TypeError(f"domain must be a str, not"
+                            f" {self.domain.__class__.__name__}")
 
         if self.usr is not None and not isinstance(self.usr, str):
-            raise TypeError(f'usr must be None or a str, not'
-                            f' {self.usr.__class__.__name__}')
+            raise TypeError(f"usr must be None or a str, not"
+                            f" {self.usr.__class__.__name__}")
 
         if not isinstance(self.port, int):
-            raise TypeError(f'port must be an int, not'
-                            f' {self.port.__class__.__name__}')
+            raise TypeError(f"port must be an int, not"
+                            f" {self.port.__class__.__name__}")
 
         if not (0 <= self.port <= 65535):
-            raise ValueError(
-                    f"port ({self.port!r}) must be between 0 and 65535 inclusive")
+            raise ValueError(f"port ({self.port!r}) must be between"
+                             f" 0 and 65535 inclusive")
 
     def copy_with(self, *, server: str = None, port: int = None,
                   domain: str = None, usr: str = None) -> 'ProxyInfo':
@@ -149,16 +149,15 @@ def make_proxy(info: ProxyInfo, *, debug: bool = False) -> Mapping[str, str]:
             }
     """
 
-    info.assert_correct()
+    ProxyInfo.assert_correct(info)  # call from class so user can pass a tuple
     server, port, domain, usr = info
 
     if debug:
-        print(f"Using proxy address: {server!r}")
-        print(f"Using domain name: {domain!r}")
-        if usr: print(f"using username: {usr!r}")
+        print(f"using proxy address: {server}:{port}")
+        print(f"using domain name: {domain}")
+        if usr: print(f"using username: {usr}")
 
-    usr = usr or getuser()
-    usr = make_url_safe(usr)
+    usr = make_url_safe(usr or getuser())
 
     if domain:
         if not domain.endswith('\\'):

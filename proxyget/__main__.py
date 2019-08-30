@@ -35,6 +35,11 @@ Example usage to retrieve a file:
 Example usage to retrieve an executable file:
 
     $ python -m proxyget http://url/to/executable.exe -b --out ./exec.exe
+    
+There are also to sub-commands gitclone and npminstall that will run "git clone"
+and "npm install" through the proxy respectively. To run them, do
+
+    $ python -m proxyget.gitclone <args>
 """
 
 def main():
